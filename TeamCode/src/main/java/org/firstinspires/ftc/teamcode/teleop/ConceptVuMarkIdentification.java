@@ -30,6 +30,7 @@ package org.firstinspires.ftc.teamcode.teleop;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.Hardware;
 
 import org.firstinspires.ftc.robotcontroller.external.samples.ConceptVuforiaNavigation;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -45,6 +46,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.firstinspires.ftc.teamcode.core.HardwareCompbot;
 
 /**
  * This OpMode illustrates the basics of using the Vuforia engine to determine
@@ -78,6 +80,8 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
      * localization engine.
      */
     VuforiaLocalizer vuforia;
+    HardwareCompbot robot = new HardwareCompbot();
+
 
     @Override public void runOpMode() {
 
@@ -87,6 +91,7 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
          */
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
+
 
         // OR...  Do Not Activate the Camera Monitor View, to save power
         // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
@@ -170,6 +175,13 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
             }
             else {
                 telemetry.addData("VuMark", "not visible");
+            }
+
+            while(vuMark != RelicRecoveryVuMark.RIGHT) {
+                robot.frontLeft.setPower(.2);
+                robot.frontRight.setPower(.2);
+                robot.backLeft.setPower(.2);
+                robot.backRight.setPower(.2);
             }
 
             telemetry.update();
