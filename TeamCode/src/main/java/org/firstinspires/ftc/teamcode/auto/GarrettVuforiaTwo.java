@@ -26,14 +26,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.firstinspires.ftc.teamcode.teleop;
+package org.firstinspires.ftc.teamcode.auto;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.Hardware;
 
-import org.firstinspires.ftc.robotcontroller.external.samples.ConceptVuforiaNavigation;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
@@ -49,28 +48,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefau
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.firstinspires.ftc.teamcode.core.HardwareCompbot;
 
-/**
- * This OpMode illustrates the basics of using the Vuforia engine to determine
- * the identity of Vuforia VuMarks encountered on the field. The code is structured as
- * a LinearOpMode. It shares much structure with {@link ConceptVuforiaNavigation}; we do not here
- * duplicate the core Vuforia documentation found there, but rather instead focus on the
- * differences between the use of Vuforia for navigation vs VuMark identification.
- *
- * @see ConceptVuforiaNavigation
- * @see VuforiaLocalizer
- * @see VuforiaTrackableDefaultListener
- * see  ftc_app/doc/tutorial/FTC_FieldCoordinateSystemDefinition.pdf
- *
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
- *
- * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
- * is explained in {@link ConceptVuforiaNavigation}.
- */
 
-@Autonomous(name="VuMark", group ="Concept")
+@Autonomous(name=" VuMark Two", group ="Concept")
 
-public class ConceptVuMarkIdentification extends LinearOpMode {
+public class GarrettVuforiaTwo extends LinearOpMode {
 
     public static final String TAG = "Vuforia VuMark Sample";
 
@@ -81,8 +62,15 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
      * localization engine.
      */
     VuforiaLocalizer vuforia;
-    HardwareCompbot robot = new HardwareCompbot();
+    HardwareCompbot hardwareCompbot = new HardwareCompbot();
 
+    double tX; // X value extracted from our the offset of the traget relative to the robot.
+    double tZ; // Same as above but for Z
+    double tY; // Same as above but for Y
+    // -----------------------------------
+    double rX; // X value extracted from the rotational components of the tartget relitive to the robot
+    double rY; // Same as above but for Y
+    double rZ; // Same as above but for Z
 
     @Override public void runOpMode() {
 
@@ -90,9 +78,9 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
          * To start up Vuforia, tell it the view that we wish to use for camera monitor (on the RC phone);
          * If no camera monitor is desired, use the parameterless constructor instead (commented out below).
          */
+        hardwareCompbot.init(hardwareMap);
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
-
 
         // OR...  Do Not Activate the Camera Monitor View, to save power
         // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
@@ -137,6 +125,13 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
 
         while (opModeIsActive()) {
 
+            hardwareCompbot.frontLeft.setPower(.05);
+            hardwareCompbot.frontRight.setPower(.05);
+            hardwareCompbot.backLeft.setPower(.05);
+            hardwareCompbot.backRight.setPower(.05);
+
+
+
             /**
              * See if any of the instances of {@link relicTemplate} are currently visible.
              * {@link RelicRecoveryVuMark} is an enum which can have the following values:
@@ -146,6 +141,10 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
             RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
             if (vuMark != RelicRecoveryVuMark.UNKNOWN) {
 
+                hardwareCompbot.frontLeft.setPower(0);
+                hardwareCompbot.frontRight.setPower(0);
+                hardwareCompbot.backLeft.setPower(0);
+                hardwareCompbot.backRight.setPower(0);
 
                 /* Found an instance of the template. In the actual game, you will probably
                  * loop until this condition occurs, then move on to act accordingly depending
@@ -157,36 +156,31 @@ public class ConceptVuMarkIdentification extends LinearOpMode {
                  * we illustrate it nevertheless, for completeness. */
                 OpenGLMatrix pose = ((VuforiaTrackableDefaultListener)relicTemplate.getListener()).getPose();
                 telemetry.addData("Pose", format(pose));
-                robot.frontLeft.setPower(.5);
-                robot.frontRight.setPower(.5);
-                robot.backLeft.setPower(.5);
-                robot.backRight.setPower(.5);
-                /* We further illustrate how to decompose the pose into useful rotational and
-                 * translational components */
-                if (pose != null) {
-                    VectorF trans = pose.getTranslation();
-                    Orientation rot = Orientation.getOrientation(pose, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
 
-                    // Extract the X, Y, and Z components of the offset of the target relative to the robot
-                    double tX = trans.get(0);
-                    double tY = trans.get(1);
-                    double tZ = trans.get(2);
-
-                    // Extract the rotational components of the target relative to the robot
-                    double rX = rot.firstAngle;
-                    double rY = rot.secondAngle;
-                    double rZ = rot.thirdAngle;
-
-
-
-
+                if (vuMark == RelicRecoveryVuMark.LEFT)
+                { // Test to see if Image is the "LEFT" image and display value.
+                    telemetry.addData("VuMark is", "Left");
+                    telemetry.addData("X =", tX);
+                    telemetry.addData("Y =", tY);
+                    telemetry.addData("Z =", tZ);
+                } else if (vuMark == RelicRecoveryVuMark.RIGHT)
+                { // Test to see if Image is the "RIGHT" image and display values.
+                    telemetry.addData("VuMark is", "Right");
+                    telemetry.addData("X =", tX);
+                    telemetry.addData("Y =", tY);
+                    telemetry.addData("Z =", tZ);
+                } else if (vuMark == RelicRecoveryVuMark.CENTER)
+                { // Test to see if Image is the "CENTER" image and display values.
+                    telemetry.addData("VuMark is", "Center");
+                    telemetry.addData("X =", tX);
+                    telemetry.addData("Y =", tY);
+                    telemetry.addData("Z =", tZ);
 
                 }
+            } else
+            {
+                telemetry.addData("VuMark", "not visible");
             }
-
-
-
-
             telemetry.update();
         }
     }
