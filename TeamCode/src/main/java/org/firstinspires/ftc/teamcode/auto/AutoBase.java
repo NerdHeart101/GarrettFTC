@@ -37,17 +37,18 @@ public class AutoBase extends LinearOpMode {
     // Note: TURN_SPEED is used for the first part of the turn, FINE_TURN for the last part of it
     static final double     TURN_SPEED              = 0.25;
     static final double     FINE_TURN               = 0.1 ;
+    static final double     CENTER_OFFSET           = 2   ;     // The offset of the center of the bot from the center of the balancing stone
 
     VuforiaLocalizer vuforia;
     VuforiaTrackables relicTrackables;
     VuforiaTrackable relicTemplate;
     public static final String TAG = "Vuforia VuMark Sample";
 
-    double tX; // X value extracted from our the offset of the traget relative to the robot.
+    double tX; // X value extracted from our the offset of the target relative to the robot.
     double tZ; // Same as above but for Z
     double tY; // Same as above but for Y
     // -----------------------------------
-    double rX; // X value extracted from the rotational components of the tartget relitive to the robot
+    double rX; // X value extracted from the rotational components of the target relative to the robot
     double rY; // Same as above but for Y
     double rZ; // Same as above but for Z
 
@@ -85,87 +86,132 @@ public class AutoBase extends LinearOpMode {
         robot.gyroSensor.calibrate();
     }
 
-    public void runAuto(boolean red, boolean front) {
+    public void runAuto(boolean red, boolean front, boolean jewel, boolean glyph, boolean vuforia) {
         // Grab glyph, get arm in sensing position
         robot.topLeftClaw.setPosition(1);
         robot.topRightClaw.setPosition(0);
         glyphGrab(true);
         glyph(0.5,1);
 
-        robot.jewelArm.setPosition(0.725);
+        if(jewel) {
+            robot.jewelArm.setPosition(0.725);
 
-        sleep(2000);
+            sleep(2000);
 
-        // Sense color and knock jewel
-        // Note: higher shoulder values mean farther forward
-        while(opModeIsActive()) {
-            telemetry.addData("Status", "Sensing");
-            telemetry.update();
-            if (robot.colorSensor.red() != robot.colorSensor.blue()) {
-                if ((robot.colorSensor.blue() > robot.colorSensor.red()) == red) {
-                    robot.jewelShoulder.setPosition(0.7);
-                } else {
-                    robot.jewelShoulder.setPosition(0.3);
-                }
-                sleep(2000);
-                break;
-            } else {
-                robot.jewelShoulder.setPosition(robot.jewelShoulder.getPosition() + .001);
-                // Failsafe
-                if(robot.jewelShoulder.getPosition() > 0.7) {
+            // Sense color and knock jewel
+            // Note: higher shoulder values mean farther forward
+            while (opModeIsActive()) {
+                telemetry.addData("Status", "Sensing");
+                telemetry.update();
+                if (robot.colorSensor.red() != robot.colorSensor.blue()) {
+                    if ((robot.colorSensor.blue() > robot.colorSensor.red()) == red) {
+                        robot.jewelShoulder.setPosition(0.7);
+                    } else {
+                        robot.jewelShoulder.setPosition(0.3);
+                    }
+                    sleep(2000);
                     break;
+                } else {
+                    robot.jewelShoulder.setPosition(robot.jewelShoulder.getPosition() + .001);
+                    // Failsafe
+                    if (robot.jewelShoulder.getPosition() > 0.7) {
+                        break;
+                    }
                 }
             }
+
+            // Reset arm
+            robot.jewelArm.setPosition(0.0);
+            robot.jewelShoulder.setPosition(0.5);
         }
 
-        // Reset arm
-        robot.jewelArm.setPosition(0.0);
-        robot.jewelShoulder.setPosition(0.5);
-
-        // Drive to safe zone an score glyph
-        // Front stones
-        if (front) {
-            // Red
-            if(red) {
-
-
-
-                encoderDrive(24.0, 0);
-                gyroRotate(-45, TURN_SPEED);
-                encoderDrive(14,0);
-                glyph(-0.5,1);
-                glyphGrab(false);
-                encoderDrive(1,180);
+        // Drive to safe zone and score glyph
+        if(glyph) {
+            // Front stones
+            if (front) {
+                // Red
+                if (red) {
+                    if(vuforia) {
+                        // Get the bonus target while doing the first move
+                        RelicRecoveryVuMark bonusTarget = vuforiaDrive(36 + CENTER_OFFSET, 0);
+                        // Rotate the appropriate amount to get to the correct column
+                        if(bonusTarget == RelicRecoveryVuMark.LEFT) {
+                            gyroRotate(-60, TURN_SPEED);
+                        } else if (bonusTarget == RelicRecoveryVuMark.RIGHT) {
+                            gyroRotate(-120, TURN_SPEED);
+                        } else {
+                            gyroRotate(-90, TURN_SPEED);
+                        }
+                        // Move into position
+                        encoderDrive(6.0, 0);
+                    } else {
+                        // Move into position
+                        encoderDrive(36 + CENTER_OFFSET, 0);
+                        gyroRotate(-90, TURN_SPEED);
+                        encoderDrive(6, 0);
+                    }
+                    // Place the cube
+                    glyph(-0.5, 1);
+                    glyphGrab(false);
+                    encoderDrive(1, 180);
+                }
+                // Blue
+                else {
+                    if(vuforia) {
+                        // Get the bonus target while doing the first move
+                        RelicRecoveryVuMark bonusTarget = vuforiaDrive(36 + CENTER_OFFSET, 0);
+                        // Rotate the appropriate amount to get to the correct column
+                        if(bonusTarget == RelicRecoveryVuMark.LEFT) {
+                            gyroRotate(-60, TURN_SPEED);
+                        } else if (bonusTarget == RelicRecoveryVuMark.RIGHT) {
+                            gyroRotate(-120, TURN_SPEED);
+                        } else {
+                            gyroRotate(-90, TURN_SPEED);
+                        }
+                        // Move into position
+                        encoderDrive(6.0, 0);
+                    } else {
+                        encoderDrive(36 - CENTER_OFFSET, 180);
+                        gyroRotate(90, TURN_SPEED);
+                        encoderDrive(6, 0);
+                    }
+                    glyph(-0.5, 1);
+                    glyphGrab(false);
+                    encoderDrive(1, 180);
+                }
             }
-            // Blue
+            // Back stones
             else {
-                encoderDrive(26.0, 180);
-                gyroRotate(230, TURN_SPEED);
-                encoderDrive(17,0);
-                glyph(-0.5,1);
-                glyphGrab(false);
-                encoderDrive(1,180);
-            }
-        }
-        // Back stones
-        else {
-            // Red
-            if(red) {
-                encoderDrive(29.0,0);
-                gyroRotate(45,TURN_SPEED);
-                encoderDrive(5,0);
-                glyph(-0.5,1);
-                glyphGrab(false);
-                encoderDrive(1,180);
-            }
-            // Blue
-            else {
-                encoderDrive(28.0,180);
-                gyroRotate(135,TURN_SPEED);
-                encoderDrive(8,0);
-                glyph(-0.5,1);
-                glyphGrab(false);
-                encoderDrive(1,180);
+                // Red
+                if (red) {
+                    if(vuforia) {
+                        encoderDrive(24 + CENTER_OFFSET, 0);
+                        gyroRotate(45, TURN_SPEED);
+                        encoderDrive(5, 0);
+                    } else {
+                        encoderDrive(24 + CENTER_OFFSET, 0);
+                        gyroRotate(45, TURN_SPEED);
+                        encoderDrive(5, 0);
+                    }
+                    glyph(-0.5, 1);
+                    glyphGrab(false);
+                    encoderDrive(1, 180);
+                }
+                // Blue
+                else {
+                    if(vuforia) {
+                        encoderDrive(24 + CENTER_OFFSET, 0);
+                        gyroRotate(45, TURN_SPEED);
+                        encoderDrive(5, 0);
+                    } else {
+                        encoderDrive(24 - CENTER_OFFSET, 180);
+                        gyroRotate(135, TURN_SPEED);
+                        encoderDrive(8, 0);
+                    }
+                    glyph(-0.5, 1);
+                    glyphGrab(false);
+                    encoderDrive(1, 180);
+                }
             }
         }
 
@@ -175,133 +221,6 @@ public class AutoBase extends LinearOpMode {
         while(opModeIsActive()){}
     }
 
-    public void runVorfia(boolean red, boolean front) {
-
-        telemetry.addData(">", "Press Play to start");
-        telemetry.update();
-
-        // Grab glyph, get arm in sensing position
-        robot.topLeftClaw.setPosition(1);
-        robot.topRightClaw.setPosition(0);
-        glyphGrab(true);
-        glyph(0.5,1);
-
-        robot.jewelArm.setPosition(0.725);
-
-        sleep(2000);
-
-        // Sense color and knock jewel
-        // Note: higher shoulder values mean farther forward
-        runtime.reset();
-        while(opModeIsActive() && (runtime.seconds() < 4.0)) {
-            telemetry.addData("Status", "Sensing");
-            telemetry.update();
-            if (robot.colorSensor.red() != robot.colorSensor.blue()) {
-                if ((robot.colorSensor.blue() > robot.colorSensor.red()) == red) {
-                    robot.jewelShoulder.setPosition(0.7);
-                } else {
-                    robot.jewelShoulder.setPosition(0.3);
-                }
-                sleep(2000);
-                break;
-            } else {
-                robot.jewelShoulder.setPosition(robot.jewelShoulder.getPosition() + .001);
-                // Failsafe
-                if(robot.jewelShoulder.getPosition() > 0.7) {
-                    break;
-                }
-            }
-        }
-
-        // Reset arm
-        robot.jewelArm.setPosition(0.0);
-        robot.jewelShoulder.setPosition(0.5);
-        runtime.reset();
-
-        relicTrackables.activate();
-
-        while (opModeIsActive() && (runtime.seconds() < 15.0)) {
-            robot.frontLeft.setPower(.1);
-            robot.frontRight.setPower(.1);
-            robot.backLeft.setPower(.1);
-            robot.backRight.setPower(.1);
-
-
-            /**
-             * See if any of the instances of {@link relicTemplate} are currently visible.
-             * {@link RelicRecoveryVuMark} is an enum which can have the following values:
-             * UNKNOWN, LEFT, CENTER, and RIGHT. When a VuMark is visible, something other than
-             * UNKNOWN will be returned by {@link RelicRecoveryVuMark#from(VuforiaTrackable)}.
-             */
-            RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
-            if (vuMark != RelicRecoveryVuMark.UNKNOWN) {
-
-
-                robot.frontLeft.setPower(0);
-                robot.frontRight.setPower(0);
-                robot.backLeft.setPower(0);
-                robot.backRight.setPower(0);
-
-                /* Found an instance of the template. In the actual game, you will probably
-                 * loop until this condition occurs, then move on to act accordingly depending
-                 * on which VuMark was visible. */
-                telemetry.addData("VuMark", "%s visible", vuMark);
-
-                /* For fun, we also exhibit the navigational pose. In the Relic Recovery game,
-                 * it is perhaps unlikely that you will actually need to act on this pose information, but
-                 * we illustrate it nevertheless, for completeness. */
-                OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) relicTemplate.getListener()).getPose();
-                telemetry.addData("Pose", format(pose));
-
-                if (vuMark == RelicRecoveryVuMark.LEFT) { // Test to see if Image is the "LEFT" image and display value.
-                    telemetry.addData("VuMark is", "Left");
-                    telemetry.addData("X =", tX);
-                    telemetry.addData("Y =", tY);
-                    telemetry.addData("Z =", tZ);
-                    gyroRotate(10,TURN_SPEED);
-                } else if (vuMark == RelicRecoveryVuMark.RIGHT) { // Test to see if Image is the "RIGHT" image and display values.
-                    telemetry.addData("VuMark is", "Right");
-                    telemetry.addData("X =", tX);
-                    telemetry.addData("Y =", tY);
-                    telemetry.addData("Z =", tZ);
-                    runtime.reset();
-                    while (runtime.seconds() < 2.0) {
-                        robot.frontLeft.setPower(.1);
-                        robot.frontRight.setPower(.1);
-                        robot.backLeft.setPower(.1);
-                        robot.backRight.setPower(.11);
-
-
-
-                    }
-                    runtime.reset();
-                    while (runtime.seconds() < 1) {
-                        gyroRotate(10,TURN_SPEED);
-                    }
-                    runtime.reset();
-
-
-                } else if (vuMark == RelicRecoveryVuMark.CENTER) { // Test to see if Image is the "CENTER" image and display values.
-                    telemetry.addData("VuMark is", "Center");
-                    telemetry.addData("X =", tX);
-                    telemetry.addData("Y =", tY);
-                    telemetry.addData("Z =", tZ);
-
-                }
-            } else {
-                telemetry.addData("VuMark", "not visible");
-            }
-            telemetry.update();
-
-
-
-        }
-        runtime.reset();
-
-
-
-    }
-
     public void glyph(double power, double time) {
         double endTime = runtime.seconds() + time;
         robot.glyphLift.setPower(power);
@@ -309,7 +228,6 @@ public class AutoBase extends LinearOpMode {
         robot.glyphLift.setPower(0.0);
     }
 
-    // Method by FIRST to drive a certain number of inches
     public void encoderDrive(double inches, double angle) {
         encoderDrive(inches, angle, DRIVE_SPEED, inches / DRIVE_SPEED);
     }
@@ -350,9 +268,6 @@ public class AutoBase extends LinearOpMode {
             while ( robot.frontLeft.isBusy() && robot.frontRight.isBusy() &&
                     robot.backLeft.isBusy() && robot.backRight.isBusy() &&
                     runtime.seconds() < timeout && opModeIsActive()) {
-                /* int frontEnc = Math.abs(robot.frontLeft.getCurrentPosition());
-                int backEnc = Math.abs(robot.backLeft.getCurrentPosition());
-                int compareEnc = Math.max(frontEnc, backEnc); */
 
                 telemetry.addData("Path", "fl %d :: br %d :: fr %d :: bl %d", fl, br, fr, bl);
                 telemetry.addData("Position", "fl %d :: br %d :: fr %d :: bl %d",
@@ -360,9 +275,6 @@ public class AutoBase extends LinearOpMode {
                         robot.frontRight.getCurrentPosition(), robot.backLeft.getCurrentPosition());
                 telemetry.addData("Timeout", "%.2f : %.2f", timeout, runtime.seconds());
                 telemetry.update();
-                /* if (compareEnc > Math.max(Math.abs(fl), Math.abs(bl))) {
-                    break;
-                } */
             }
 
             robot.frontLeft.setPower(0);
@@ -375,6 +287,98 @@ public class AutoBase extends LinearOpMode {
             robot.backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
+    }
+
+    // These methods are garbage but at least they work probably
+    public RelicRecoveryVuMark vuforiaDrive(double inches, double angle) {
+        return vuforiaDrive(inches, angle, DRIVE_SPEED, inches / DRIVE_SPEED);
+    }
+
+    public RelicRecoveryVuMark vuforiaDrive(double inches, double angle, double speed) {
+        return vuforiaDrive(inches, angle, speed, inches / DRIVE_SPEED);
+    }
+
+    public RelicRecoveryVuMark vuforiaDrive(double inches, double angle, double speed, double timeout) {
+
+        // Return variable
+        RelicRecoveryVuMark vuMarkReturn = RelicRecoveryVuMark.UNKNOWN;
+
+        // Encoder target variables
+        int fl, fr, bl, br;
+
+        if (opModeIsActive()) {
+
+            // Motor positions determined by trigonometry
+            angle += 45;
+            fl = robot.frontLeft.getCurrentPosition() + (int) (COUNTS_PER_INCH * Math.cos(Math.toRadians(angle)) * inches);
+            fr = robot.frontRight.getCurrentPosition() + (int) (COUNTS_PER_INCH * Math.sin(Math.toRadians(angle)) * inches);
+            bl = robot.backLeft.getCurrentPosition() + (int) (COUNTS_PER_INCH * Math.sin(Math.toRadians(angle)) * inches);
+            br = robot.backRight.getCurrentPosition() + (int) (COUNTS_PER_INCH * Math.cos(Math.toRadians(angle)) * inches);
+
+            // Path telemetry
+            telemetry.addData("Path", "fl %d :: br %d :: fr %d :: bl %d", fl, br, fr, bl);
+            telemetry.update();
+
+            // Apply positions to motors
+            robot.frontLeft.setTargetPosition(fl);
+            robot.frontRight.setTargetPosition(fr);
+            robot.backLeft.setTargetPosition(bl);
+            robot.backRight.setTargetPosition(br);
+
+            // Set motor mode
+            robot.frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            // Apply motor powers proportional to how far they have to move
+            runtime.reset();
+            robot.frontLeft.setPower(speed * Math.abs(Math.cos(Math.toRadians(angle))));
+            robot.frontRight.setPower(speed * Math.abs(Math.sin(Math.toRadians(angle))));
+            robot.backLeft.setPower(speed * Math.abs(Math.sin(Math.toRadians(angle))));
+            robot.backRight.setPower(speed * Math.abs(Math.cos(Math.toRadians(angle))));
+
+            // Activate Vuforia targets
+            relicTrackables.activate();
+
+            while ( robot.frontLeft.isBusy() && robot.frontRight.isBusy() &&
+                    robot.backLeft.isBusy() && robot.backRight.isBusy() &&
+                    runtime.seconds() < timeout && opModeIsActive()) {
+
+                // Motor telemetry
+                telemetry.addData("Path", "fl %d :: br %d :: fr %d :: bl %d", fl, br, fr, bl);
+                telemetry.addData("Position", "fl %d :: br %d :: fr %d :: bl %d",
+                        robot.frontLeft.getCurrentPosition(), robot.backRight.getCurrentPosition(),
+                        robot.frontRight.getCurrentPosition(), robot.backLeft.getCurrentPosition());
+                telemetry.addData("Timeout", "%.2f : %.2f", timeout, runtime.seconds());
+
+                // Vuforia nonsense
+                if (vuMarkReturn == RelicRecoveryVuMark.UNKNOWN) {
+                    // Only look for vuforia if we do not already have a return value
+                    RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
+                    vuMarkReturn = vuMark;
+                }
+
+                telemetry.addData("VuMark", vuMarkReturn);
+                telemetry.update();
+
+            }
+
+            // End motor movement
+            robot.frontLeft.setPower(0);
+            robot.frontRight.setPower(0);
+            robot.backLeft.setPower(0);
+            robot.backRight.setPower(0);
+
+            // Get motors ready for TeleOp once again
+            robot.frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
+        // Return VuMark value
+        return vuMarkReturn;
     }
 
     // Positive degrees is left

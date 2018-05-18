@@ -14,6 +14,6 @@ public class AutoRedBack extends AutoBase {
 
         initAuto();
         waitForStart();
-        runAuto(true,false);
+        runAuto(true,false, true, true, true);
     }
 }

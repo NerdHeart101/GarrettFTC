@@ -11,10 +11,5 @@ public class AutoVuforiaRedFront extends AutoBase {
         initAuto();
         initVuforia();
         waitForStart();
-        runVorfia(true,true);
     }
-
-
-
-
 }

@@ -14,6 +14,6 @@ public class AutoBlueBack extends AutoBase {
 
         initAuto();
         waitForStart();
-        runAuto(false,false);
+        runAuto(false,false, true, true, true);
     }
 }

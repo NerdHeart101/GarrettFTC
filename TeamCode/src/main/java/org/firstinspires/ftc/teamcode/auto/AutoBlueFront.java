@@ -14,6 +14,6 @@ public class AutoBlueFront extends AutoBase {
 
         initAuto();
         waitForStart();
-        runAuto(false,true);
+        runAuto(false,true, true, true, true);
     }
 }

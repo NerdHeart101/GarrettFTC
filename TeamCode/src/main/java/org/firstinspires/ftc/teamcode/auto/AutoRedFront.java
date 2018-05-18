@@ -15,6 +15,6 @@ public class AutoRedFront extends AutoBase {
         initAuto();
         initVuforia();
         waitForStart();
-        runAuto(true,true);
+        runAuto(true,true, true, true, true);
     }
 }
